@@ -22,7 +22,7 @@ ap.add_argument("-i", "--input", type=str,
     help="path to input video file")
 ap.add_argument("-o", "--output", type=str, 
     help="path to output file")
-ap.add_argument("-c", "--confidence", type=float, default=0.4,
+ap.add_argument("-c", "--confidence", type=float, default=0.9,
 	help="minimum probability to filter weak detections")
 ap.add_argument("-s", "--skip-frames", type=int, default=30,
 	help="# of skip frames between detections")
@@ -179,9 +179,17 @@ while True:
                 to.centroids.append(centroid)
 
                 if not to.counted:
-                    y == H // 2
-                    counts += 1
-                    to.counted = True
+                    if direction < 0 and centroid[1] < H // 2:
+                        counts += 1
+                        to.counted = True
+                    
+                    elif direction > 0 and centroid[1] > H // 2:
+                        counts += 1
+                        to.counted = True
+
+                    #y == (H // 2)
+                    #counts += 1
+                    #to.counted = True
             
             trackableObjects[objectID] = to
 
