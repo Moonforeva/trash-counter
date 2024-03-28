@@ -4,29 +4,29 @@ import numpy as np
 import cv2
 import argparse
 import dlib
-import imutils
+# import imutils
 from pyimagesearch.centroidtracker import CentroidTracker
 from pyimagesearch.trackableobject import TrackableObject
-from imutils.video import FPS
+# from imutils.video import FPS
 
 
 # contruct argument parse and parse the arguments
 ap = argparse.ArgumentParser()
-ap.add_argument("-y","--yolo", required=True,
+ap.add_argument("-y","--yolo", default="yolov4-mish-416.cfg", required=False,
     help="path to YOLO 'cfg' file")
-ap.add_argument("-w", "--weight", required=True,
+ap.add_argument("-w", "--weight", default="yolov4-mish-416_final.weights", required=False,
     help="path to YOLO pre-trained weights file")
-ap.add_argument("-l","--lable", required=True,
+ap.add_argument("-l","--lable", default="trash-counter.names", required=False,
     help="path to class lable file")
-ap.add_argument("-i", "--input", type=str,
+ap.add_argument("-i", "--input",default="trash_flow.mp4", type=str,
     help="path to input video file")
 ap.add_argument("-o", "--output", type=str, 
     help="path to output file")
-ap.add_argument("-c", "--confidence", type=float, default=0.9,
+ap.add_argument("-c", "--confidence", type=float, default=0.5,
 	help="minimum probability to filter weak detections")
 ap.add_argument("-s", "--skip-frames", type=int, default=30,
 	help="# of skip frames between detections")
-ap.add_argument("--device", default='cpu', help="Device to be use either 'cpu' or 'gpu'")
+ap.add_argument("-d","--device", default='cpu', help="Device to be use either 'cpu' or 'gpu'")
 args = vars(ap.parse_args())
 
 # load YOLO class lable
@@ -52,7 +52,7 @@ def getOutputsNames(net):
     # Get the names of all the layers in the network
     layersNames = net.getLayerNames()
     # Get the names of the output layers, i.e. the layers with unconnected outputs
-    return [layersNames[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+    return [layersNames[i-1] for i in net.getUnconnectedOutLayers()]
 
 # get video source (Video Stream or Video file)
 if not args.get("input", False):
@@ -71,6 +71,7 @@ W = None
 H = None
 
 ct = CentroidTracker(maxDisappeared=40, maxDistance=50)
+tracker = dlib.correlation_tracker()
 trackers = []
 trackableObjects = {}
 
@@ -79,7 +80,7 @@ totalFrames = 0
 # set counts as zero (initial)
 counts = 0
 
-fps = FPS().start()
+# fps = FPS().start()
 
 # Video source propeties manipulation
 while True:
@@ -90,9 +91,6 @@ while True:
 
     if args["input"] is not None and frame is None:
         break
-
-    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     # if the frame dimensions are empty, set them
     if W is None or H is None:
@@ -141,16 +139,15 @@ while True:
                     confidences.append(float(confidence))
                     classIDs.append(classID)
 
-                    tracker = dlib.correlation_tracker()
                     rect = dlib.rectangle(x, y, right, bottom)
-                    tracker.start_track(rgb,rect)
+                    tracker.start_track(frame,rect)
 
                     trackers.append(tracker)
 
         else:
             for tracker in trackers:
                 status = "Tracking"
-                tracker.update(rgb)
+                tracker.update(frame)
                 pos = tracker.get_position()
 
                 startX = int(pos.left())
